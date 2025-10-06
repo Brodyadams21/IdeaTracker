@@ -4,8 +4,6 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { ButtonProps } from '../types';
 
@@ -16,7 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   size = 'medium',
   disabled = false,
   loading = false,
-  icon,
+  icon: _icon,
 }) => {
   const buttonStyle = [
     styles.button,

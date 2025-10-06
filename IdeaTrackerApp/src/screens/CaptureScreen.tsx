@@ -7,6 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -21,7 +22,7 @@ import dataService from '../services/dataService';
 import locationService from '../services/locationService';
 
 const CaptureScreen: React.FC = () => {
-  const { state, addIdea, setError, clearError, setLoading } = useApp();
+  const { state, addIdea, setError, setLoading } = useApp();
   
   // Form state
   const [title, setTitle] = useState('');
@@ -46,7 +47,7 @@ const CaptureScreen: React.FC = () => {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [description]);
+  }, [description, state.user?.preferences.autoCategorize]);
 
   const processWithAI = async () => {
     if (!description.trim() || !aiService.isAvailable()) return;
@@ -156,8 +157,8 @@ const CaptureScreen: React.FC = () => {
     }
   };
 
-  const getPriorityColor = (pri: Priority): string => {
-    switch (pri) {
+  const getPriorityColor = (_pri: Priority): string => {
+    switch (_pri) {
       case 'urgent':
         return '#FF3B30';
       case 'high':

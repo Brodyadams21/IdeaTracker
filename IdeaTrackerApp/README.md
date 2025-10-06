@@ -1,97 +1,236 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# IdeaTracker - AI-Powered Idea Management App
 
-# Getting Started
+A modern React Native mobile app that helps you capture, organize, and track your ideas using intelligent AI categorization and beautiful, intuitive design.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## ✨ Features
 
-## Step 1: Start Metro
+- **🤖 AI-Powered Categorization**: Automatically categorizes ideas as locations, habits, or one-time tasks
+- **📍 Location Tracking**: Map view for places to visit with geocoding support
+- **🔄 Habit Management**: Track daily routines and learning goals
+- **✨ Quick Capture**: Simple interface to capture ideas on the go
+- **🏷️ Smart Tagging**: Automatic tag generation for easy organization
+- **🗺️ Interactive Maps**: Visual representation of location-based ideas
+- **📊 Statistics**: Track your idea patterns and progress
+- **🎨 Beautiful UI**: Modern, intuitive design with smooth animations
+- **📱 Cross-Platform**: Works on both iOS and Android
+- **🔒 Secure**: Firebase authentication and data storage
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🚀 Quick Start
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Prerequisites
 
-```sh
-# Using npm
-npm start
+- Node.js 20+ and npm/yarn
+- React Native development environment set up
+- Android Studio (for Android development)
+- Xcode (for iOS development, macOS only)
 
-# OR using Yarn
-yarn start
+### 1. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
 ```
 
-## Step 2: Build and run your app
+### 2. Configure API Keys
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Edit `src/config/api.ts` and replace the placeholder values with your actual API keys:
+
+```typescript
+export const API_CONFIG = {
+  FIREBASE: {
+    apiKey: 'YOUR_FIREBASE_API_KEY',
+    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    projectId: 'YOUR_PROJECT_ID',
+    // ... other Firebase config
+  },
+  OPENAI: {
+    apiKey: 'YOUR_OPENAI_API_KEY',
+    // ... other OpenAI config
+  },
+  GOOGLE_MAPS: {
+    apiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
+    // ... other Google Maps config
+  },
+};
+```
+
+### 3. Firebase Setup
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or select existing one
+3. Add Android app:
+   - Package name: Check `android/app/build.gradle`
+   - Download `google-services.json` and place in `android/app/`
+4. Add iOS app:
+   - Bundle ID: Check `ios/IdeaTrackerApp/Info.plist`
+   - Download `GoogleService-Info.plist` and place in `ios/IdeaTrackerApp/`
+5. Enable services:
+   - **Authentication** → Sign-in method → Anonymous (enable)
+   - **Firestore Database** → Create database → Start in test mode
+
+### 4. Run the App
+
+#### Android
+```bash
+npm run android
+# or
+yarn android
+```
+
+#### iOS
+```bash
+cd ios && bundle install && cd ..
+npm run ios
+# or
+yarn ios
+```
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── Button.tsx
+│   ├── Input.tsx
+│   ├── Card.tsx
+│   ├── Modal.tsx
+│   ├── LoadingSpinner.tsx
+│   └── ErrorBoundary.tsx
+├── config/             # Configuration files
+│   ├── api.ts          # Centralized API configuration
+│   └── firebase.ts     # Firebase setup
+├── context/            # React Context for state management
+│   └── AppContext.tsx
+├── navigation/         # Navigation setup
+│   └── AppNavigator.tsx
+├── screens/           # Main app screens
+│   ├── HomeScreen.tsx
+│   ├── CaptureScreen.tsx
+│   ├── ListsScreen.tsx
+│   ├── MapScreen.tsx
+│   ├── ProfileScreen.tsx
+│   ├── IdeaDetailScreen.tsx
+│   ├── EditIdeaScreen.tsx
+│   ├── SettingsScreen.tsx
+│   └── AboutScreen.tsx
+├── services/          # Business logic and external services
+│   ├── aiService.ts
+│   ├── dataService.ts
+│   └── locationService.ts
+├── types/             # TypeScript type definitions
+│   └── index.ts
+└── utils/             # Utility functions
+```
+
+## 🎯 How It Works
+
+### Idea Categories
+
+- **📍 Locations**: Places to visit (restaurants, cities, landmarks)
+- **🔄 Habits**: Repeated activities (learning, exercise, daily routines)
+- **✨ One-Time Tasks**: Single activities (trying new foods, calling someone)
+
+### AI Processing
+
+The app uses OpenAI's GPT-3.5 to:
+- Categorize ideas intelligently
+- Extract metadata (priority, estimated time, sentiment)
+- Generate relevant tags
+- Provide context-aware processing
+
+### Smart Examples
+
+- "Try Papa Johns" → Location (specific restaurant)
+- "Learn French" → Habit (ongoing learning)
+- "Try Chinese food" → One-time task (no specific restaurant)
+- "Meditate daily" → Habit (daily routine)
+
+## 🔧 Configuration
+
+### API Keys Required
+
+1. **Firebase**: For authentication and data storage
+2. **OpenAI**: For AI-powered categorization (optional)
+3. **Google Maps**: For map functionality (optional)
+
+### Environment Variables
+
+The app uses a centralized configuration system in `src/config/api.ts`. All API keys are managed in one place for easy setup.
+
+## 🎨 Design System
+
+The app follows a consistent design system with:
+- **Colors**: Primary blue (#007AFF), success green (#34C759), error red (#FF3B30)
+- **Typography**: System fonts with proper hierarchy
+- **Components**: Reusable, accessible components
+- **Animations**: Smooth transitions and micro-interactions
+
+## 📱 Screenshots
+
+- **Home**: Dashboard with all ideas and quick actions
+- **Capture**: Simple form to add new ideas with AI suggestions
+- **Lists**: Organized view with filtering and sorting
+- **Map**: Interactive map showing location-based ideas
+- **Profile**: User stats and settings
+
+## 🚀 Production Deployment
 
 ### Android
 
-```sh
-# Using npm
-npm run android
+1. Generate a signed APK:
+```bash
+cd android
+./gradlew assembleRelease
+```
 
-# OR using Yarn
-yarn android
+2. Or build an AAB for Google Play:
+```bash
+cd android
+./gradlew bundleRelease
 ```
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+1. Open `ios/IdeaTrackerApp.xcworkspace` in Xcode
+2. Select your development team
+3. Build and archive for App Store submission
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## 🐛 Troubleshooting
 
-```sh
-bundle install
-```
+### Common Issues
 
-Then, and every time you update your native dependencies, run:
+1. **Firebase connection errors**: Check your `google-services.json` and `GoogleService-Info.plist` files
+2. **AI not working**: Verify your OpenAI API key and internet connection
+3. **Maps not loading**: Check your Google Maps API key and billing setup
+4. **Build errors**: Ensure all native dependencies are properly linked
 
-```sh
-bundle exec pod install
-```
+### Development Tips
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+- The app uses anonymous authentication by default
+- Local processing works offline without AI
+- Check console logs for debugging information
+- Use React Native Debugger for better debugging experience
 
-```sh
-# Using npm
-npm run ios
+## 🤝 Contributing
 
-# OR using Yarn
-yarn ios
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 📄 License
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+This project is licensed under the MIT License.
 
-## Step 3: Modify your app
+## 🆘 Support
 
-Now that you have successfully run the app, let's make changes!
+For issues and questions:
+- Check the troubleshooting section
+- Review Firebase and React Native documentation
+- Open an issue on GitHub
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**Note**: This app is designed to work out of the box with minimal configuration. Firebase anonymous auth and local processing ensure basic functionality without external API keys.

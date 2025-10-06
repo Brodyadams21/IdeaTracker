@@ -3,7 +3,6 @@ import {
   TouchableOpacity,
   View,
   StyleSheet,
-  ViewStyle,
 } from 'react-native';
 import { CardProps } from '../types';
 
