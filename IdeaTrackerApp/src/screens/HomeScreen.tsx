@@ -1,431 +1,494 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
   FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
-import { handleAndShowError } from '../utils/errorHandler';
-import { createLogger } from '../utils/logger';
-import { CATEGORY_CONFIG, PLACEHOLDERS } from '../constants';
-import { FirebaseIdea, CategoryStats } from '../types';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// Use the centralized types from types/index.ts
+import { useApp } from '../context/AppContext';
+import { Idea, IdeaCategory, Priority, IdeaStatus } from '../types';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import LoadingSpinner from '../components/LoadingSpinner';
+import dataService from '../services/dataService';
 
-export default function HomeScreen({ navigation }: any) {
-  const [ideas, setIdeas] = useState<FirebaseIdea[]>([]);
-  const [loading, setLoading] = useState(true);
+const HomeScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const { state, addIdea, updateIdea, deleteIdea, setError, clearError, setLoading } = useApp();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [authReady, setAuthReady] = useState(false);
-  const [stats, setStats] = useState<CategoryStats>({
-    location: 0,
-    oneTime: 0,
-    habit: 0,
-    uncategorized: 0,
-  });
-  
-  // Logger
-  const log = createLogger('HomeScreen');
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
+  // Load ideas on component mount
   useEffect(() => {
-    // Wait for auth to be ready before loading ideas
-    const authSubscriber = auth().onAuthStateChanged((user) => {
-      log.debug('Auth state changed', { userId: user?.uid || 'No user' });
-      if (user) {
-        setAuthReady(true);
-      }
-    });
-
-    return authSubscriber;
+    loadIdeas();
   }, []);
-
-  useEffect(() => {
-    // Only load ideas when auth is ready
-    if (authReady) {
-      loadIdeas();
-    }
-  }, [authReady]);
-
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      if (authReady) {
-        log.debug('Screen focused - refreshing ideas');
-        loadIdeas();
-      }
-    }, [authReady])
-  );
 
   const loadIdeas = async () => {
     try {
-      const currentUser = auth().currentUser;
-      log.debug('Loading ideas for user', { userId: currentUser?.uid });
-      
-      if (!currentUser) {
-        log.error('No authenticated user');
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const snapshot = await firestore()
-        .collection('ideas')
-        .where('userId', '==', currentUser.uid)
-        .orderBy('createdAt', 'desc')
-        .get();
-
-      const fetchedIdeas = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as FirebaseIdea[];
-
-      log.debug('Loaded ideas', { count: fetchedIdeas.length });
-      setIdeas(fetchedIdeas);
-      calculateStats(fetchedIdeas);
+      setLoading(true, 'Loading ideas...');
+      const ideas = await dataService.getIdeas();
+      // Update context with loaded ideas
+      ideas.forEach(idea => addIdea(idea));
     } catch (error) {
-      handleAndShowError(error, 'Error Loading Ideas', 'HomeScreen.loadIdeas');
+      setError(error instanceof Error ? error : new Error('Failed to load ideas'));
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const calculateStats = (ideas: FirebaseIdea[]) => {
-    const newStats: CategoryStats = {
-      location: 0,
-      oneTime: 0,
-      habit: 0,
-      uncategorized: 0,
-    };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadIdeas();
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error('Failed to refresh ideas'));
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
-    ideas.forEach(idea => {
-      if (idea.category && newStats.hasOwnProperty(idea.category)) {
-        newStats[idea.category as keyof CategoryStats]++;
+  const handleIdeaPress = (idea: Idea) => {
+    navigation.navigate('IdeaDetail', { ideaId: idea.id });
+  };
+
+  const handleIdeaComplete = async (idea: Idea) => {
+    try {
+      const updatedIdea = {
+        ...idea,
+        status: idea.status === 'completed' ? 'pending' : 'completed',
+        completedAt: idea.status === 'completed' ? undefined : new Date(),
+      };
+      
+      await dataService.updateIdea(idea.id, updatedIdea);
+      updateIdea(idea.id, updatedIdea);
+    } catch (error) {
+      setError(error instanceof Error ? error : new Error('Failed to update idea'));
+    }
+  };
+
+  const handleDeleteIdea = (idea: Idea) => {
+    Alert.alert(
+      'Delete Idea',
+      'Are you sure you want to delete this idea?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dataService.deleteIdea(idea.id);
+              deleteIdea(idea.id);
+            } catch (error) {
+              setError(error instanceof Error ? error : new Error('Failed to delete idea'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getFilteredIdeas = (): Idea[] => {
+    let filtered = state.ideas;
+
+    // Apply category filter
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(idea => idea.category === selectedFilter);
+    }
+
+    // Apply search query
+    if (state.searchQuery) {
+      const query = state.searchQuery.toLowerCase();
+      filtered = filtered.filter(idea =>
+        idea.title.toLowerCase().includes(query) ||
+        idea.description.toLowerCase().includes(query) ||
+        idea.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const field = state.sort.field;
+      const direction = state.sort.direction;
+      
+      let aValue = a[field];
+      let bValue = b[field];
+      
+      if (field === 'createdAt' || field === 'updatedAt' || field === 'completedAt') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+      
+      if (direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
       }
     });
 
-    setStats(newStats);
+    return filtered;
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadIdeas();
-  };
-
-  const filteredIdeas = selectedCategory === 'all' 
-    ? ideas 
-    : ideas.filter(idea => idea.category === selectedCategory);
-
-  // Use centralized category configuration
-
-  const toggleCompletion = async (ideaId: string, currentStatus: boolean) => {
-    try {
-      await firestore()
-        .collection('ideas')
-        .doc(ideaId)
-        .update({
-          completed: !currentStatus,
-          completedAt: !currentStatus ? firestore.FieldValue.serverTimestamp() : null,
-        });
-      
-      // Update local state
-      setIdeas(prevIdeas => 
-        prevIdeas.map(idea => 
-          idea.id === ideaId 
-            ? { ...idea, completed: !currentStatus }
-            : idea
-        )
-      );
-    } catch (error) {
-      console.error('Error updating idea:', error);
+  const getCategoryIcon = (category: IdeaCategory): string => {
+    switch (category) {
+      case 'location':
+        return 'place';
+      case 'habit':
+        return 'repeat';
+      case 'task':
+        return 'check-circle';
+      default:
+        return 'lightbulb';
     }
   };
 
-  const renderIdea = ({ item }: { item: FirebaseIdea }) => (
-    <TouchableOpacity
-      style={[
-        styles.ideaCard,
-        { borderLeftColor: CATEGORY_CONFIG[item.category]?.color || '#95A5A6' },
-        item.completed && styles.completedCard
-      ]}
-      onPress={() => navigation.navigate('IdeaDetail', { idea: item })}
-      activeOpacity={0.7}
+  const getPriorityColor = (priority: Priority): string => {
+    switch (priority) {
+      case 'urgent':
+        return '#FF3B30';
+      case 'high':
+        return '#FF9500';
+      case 'medium':
+        return '#007AFF';
+      case 'low':
+        return '#8E8E93';
+      default:
+        return '#8E8E93';
+    }
+  };
+
+  const getStatusColor = (status: IdeaStatus): string => {
+    switch (status) {
+      case 'completed':
+        return '#34C759';
+      case 'in_progress':
+        return '#007AFF';
+      case 'cancelled':
+        return '#FF3B30';
+      case 'pending':
+        return '#8E8E93';
+      default:
+        return '#8E8E93';
+    }
+  };
+
+  const renderIdeaItem = ({ item }: { item: Idea }) => (
+    <Card
+      onPress={() => handleIdeaPress(item)}
+      style={styles.ideaCard}
     >
       <View style={styles.ideaHeader}>
-        <Text style={styles.ideaIcon}>
-          {CATEGORY_CONFIG[item.category]?.icon || '📌'}
-        </Text>
-        <Text style={[styles.ideaTitle, item.completed && styles.completedText]} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <TouchableOpacity
-          onPress={() => toggleCompletion(item.id, item.completed)}
-          style={styles.checkButton}
-        >
-          <Text style={styles.checkIcon}>
-            {item.completed ? '✅' : '⭕'}
+        <View style={styles.ideaTitleContainer}>
+          <Icon
+            name={getCategoryIcon(item.category)}
+            size={20}
+            color={getPriorityColor(item.priority)}
+            style={styles.categoryIcon}
+          />
+          <Text style={styles.ideaTitle} numberOfLines={1}>
+            {item.title}
           </Text>
-        </TouchableOpacity>
+        </View>
+        
+        <View style={styles.ideaActions}>
+          <TouchableOpacity
+            onPress={() => handleIdeaComplete(item)}
+            style={[
+              styles.actionButton,
+              { backgroundColor: getStatusColor(item.status) }
+            ]}
+          >
+            <Icon
+              name={item.status === 'completed' ? 'check' : 'check-circle-outline'}
+              size={16}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={() => handleDeleteIdea(item)}
+            style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+          >
+            <Icon name="delete" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
       
-      <Text style={[styles.ideaText, item.completed && styles.completedText]} numberOfLines={2}>
-        {item.processedText || item.originalText}
+      <Text style={styles.ideaDescription} numberOfLines={2}>
+        {item.description}
       </Text>
       
       <View style={styles.ideaFooter}>
-        {item.metadata?.estimatedTime && (
-          <Text style={styles.ideaMetadata}>⏱️ {item.metadata.estimatedTime}</Text>
-        )}
-        {item.location && (
-          <Text style={styles.ideaMetadata}>📍 {item.location.placeName || item.location.address}</Text>
-        )}
-        {item.habitDetails?.frequency && (
-          <Text style={styles.ideaMetadata}>🔄 {item.habitDetails.frequency}</Text>
-        )}
+        <View style={styles.tagsContainer}>
+          {item.tags.slice(0, 3).map((tag, index) => (
+            <View key={index} style={styles.tag}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
+          ))}
+        </View>
+        
+        <Text style={styles.ideaDate}>
+          {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
       </View>
-    </TouchableOpacity>
+    </Card>
   );
 
-  const CategoryFilter = ({ category, label, count }: { category: string; label: string; count?: number }) => (
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Icon name="lightbulb-outline" size={64} color="#8E8E93" />
+      <Text style={styles.emptyTitle}>No ideas yet</Text>
+      <Text style={styles.emptyMessage}>
+        Tap the + button to capture your first idea!
+      </Text>
+      <Button
+        title="Add First Idea"
+        onPress={() => navigation.navigate('Capture')}
+        style={styles.emptyButton}
+      />
+    </View>
+  );
+
+  const renderFilterButton = (filter: string, label: string) => (
     <TouchableOpacity
+      key={filter}
       style={[
         styles.filterButton,
-        selectedCategory === category && styles.filterButtonActive,
-        selectedCategory === category && { backgroundColor: CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG]?.color || '#007AFF' }
+        selectedFilter === filter && styles.filterButtonActive
       ]}
-      onPress={() => setSelectedCategory(category)}
+      onPress={() => setSelectedFilter(filter)}
     >
       <Text style={[
-        styles.filterText,
-        selectedCategory === category && styles.filterTextActive
+        styles.filterButtonText,
+        selectedFilter === filter && styles.filterButtonTextActive
       ]}>
-        {label} {count !== undefined && `(${count})`}
+        {label}
       </Text>
     </TouchableOpacity>
   );
 
-  if (loading || !authReady) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>
-          {!authReady ? 'Authenticating...' : 'Loading your ideas...'}
-        </Text>
-      </View>
-    );
+  if (state.loading.isLoading) {
+    return <LoadingSpinner message={state.loading.loadingMessage} />;
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>💡 My Ideas</Text>
-        <Text style={styles.subtitle}>
-          {ideas.length} total • {ideas.filter(i => !i.completed).length} active
-        </Text>
+        <Text style={styles.title}>My Ideas</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Icon name="settings" size={24} color="#007AFF" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        <CategoryFilter category="all" label="All" count={ideas.length} />
-        <CategoryFilter category="location" label="📍 Places" count={stats.location} />
-        <CategoryFilter category="habit" label="🔄 Habits" count={stats.habit} />
-        <CategoryFilter category="oneTime" label="✨ One-Time" count={stats.oneTime} />
-        <CategoryFilter category="uncategorized" label="📌 Other" count={stats.uncategorized} />
-      </ScrollView>
+      <View style={styles.filtersContainer}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={[
+            { key: 'all', label: 'All' },
+            { key: 'location', label: 'Locations' },
+            { key: 'habit', label: 'Habits' },
+            { key: 'task', label: 'Tasks' },
+          ]}
+          renderItem={({ item }) => renderFilterButton(item.key, item.label)}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.filtersList}
+        />
+      </View>
 
       <FlatList
-        data={filteredIdeas}
-        renderItem={renderIdea}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
+        data={getFilteredIdeas()}
+        renderItem={renderIdeaItem}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>
-              {selectedCategory === 'all' ? '💭' : CATEGORY_CONFIG[selectedCategory as keyof typeof CATEGORY_CONFIG]?.icon || '💭'}
-            </Text>
-            <Text style={styles.emptyText}>
-              {selectedCategory === 'all' 
-                ? 'No ideas yet. Start capturing!' 
-                : `No ${selectedCategory} ideas yet`}
-            </Text>
-            <TouchableOpacity
-              style={styles.captureButton}
-              onPress={() => navigation.navigate('Capture')}
-            >
-              <Text style={styles.captureButtonText}>Capture an Idea</Text>
-            </TouchableOpacity>
-          </View>
-        }
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F2F2F7',
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  
   header: {
-    backgroundColor: 'white',
-    padding: 20,
-    paddingTop: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
   },
+  
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#000000',
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
+  
+  settingsButton: {
+    padding: 8,
   },
-  filterContainer: {
-    backgroundColor: 'white',
-    maxHeight: 60,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+  
+  filtersContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
   },
-  filterContent: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    alignItems: 'center',
+  
+  filtersList: {
+    paddingHorizontal: 16,
   },
+  
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginHorizontal: 5,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F2F2F7',
+    marginRight: 8,
   },
+  
   filterButtonActive: {
     backgroundColor: '#007AFF',
   },
-  filterText: {
+  
+  filterButtonText: {
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
+    color: '#8E8E93',
   },
-  filterTextActive: {
-    color: 'white',
+  
+  filterButtonTextActive: {
+    color: '#FFFFFF',
   },
-  listContent: {
-    padding: 15,
-    paddingBottom: 100,
+  
+  listContainer: {
+    flexGrow: 1,
+    paddingVertical: 8,
   },
+  
   ideaCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 4,
   },
-  completedCard: {
-    opacity: 0.7,
-    backgroundColor: '#f9f9f9',
-  },
+  
   ideaHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  ideaIcon: {
-    fontSize: 20,
+  
+  ideaTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  
+  categoryIcon: {
     marginRight: 8,
   },
+  
   ideaTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#000000',
     flex: 1,
   },
-  completedText: {
-    textDecorationLine: 'line-through',
-    color: '#999',
+  
+  ideaActions: {
+    flexDirection: 'row',
   },
-  checkButton: {
-    padding: 5,
+  
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
-  checkIcon: {
-    fontSize: 20,
-  },
-  ideaText: {
+  
+  ideaDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#8E8E93',
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: 12,
   },
+  
   ideaFooter: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  ideaMetadata: {
-    fontSize: 12,
-    color: '#999',
-    marginRight: 10,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  emptyContainer: {
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
   },
-  emptyIcon: {
-    fontSize: 60,
-    marginBottom: 10,
+  
+  tagsContainer: {
+    flexDirection: 'row',
+    flex: 1,
   },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 20,
+  
+  tag: {
+    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
   },
-  captureButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
+  
+  tagText: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
-  captureButtonText: {
-    color: 'white',
-    fontSize: 16,
+  
+  ideaDate: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  
+  emptyTitle: {
+    fontSize: 24,
     fontWeight: '600',
+    color: '#000000',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  
+  emptyMessage: {
+    fontSize: 16,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  
+  emptyButton: {
+    paddingHorizontal: 24,
   },
 });
+
+export default HomeScreen;
