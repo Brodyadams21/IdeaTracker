@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Allow cleartext traffic to OpenStreetMap -->
+        <domain includeSubdomains="false">nominatim.openstreetmap.org</domain>
+        <!-- Allow cleartext traffic to Google APIs -->
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <!-- Allow cleartext traffic to other location services -->
+        <domain includeSubdomains="true">mapbox.com</domain>
+    </domain-config>
+</network-security-config>
