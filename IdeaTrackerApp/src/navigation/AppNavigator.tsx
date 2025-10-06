@@ -2,25 +2,24 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Text, View } from 'react-native';
-import QuickCapture from '../screens/QuickCapture';
+import { Platform } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
+// Import screens
 import HomeScreen from '../screens/HomeScreen';
-import IdeaDetail from '../screens/IdeaDetail';
+import CaptureScreen from '../screens/CaptureScreen';
+import ListsScreen from '../screens/ListsScreen';
 import MapScreen from '../screens/MapScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import IdeaDetailScreen from '../screens/IdeaDetailScreen';
+import EditIdeaScreen from '../screens/EditIdeaScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
+// Import types
+import { TabParamList, StackParamList } from '../types';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
-
-// Placeholder screens for now
-function ListsScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 24 }}>📋 Lists</Text>
-      <Text style={{ marginTop: 10 }}>Coming soon!</Text>
-    </View>
-  );
-}
+const Tab = createBottomTabNavigator<TabParamList>();
+const Stack = createStackNavigator<StackParamList>();
 
 // Home Stack Navigator
 function HomeStack() {
@@ -28,10 +27,37 @@ function HomeStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        cardStyle: { backgroundColor: '#fff' },
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
-      <Stack.Screen name="IdeaDetail" component={IdeaDetail} />
+      <Stack.Screen 
+        name="IdeaDetail" 
+        component={IdeaDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Idea Details',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen 
+        name="EditIdea" 
+        component={EditIdeaScreen}
+        options={{
+          headerShown: true,
+          title: 'Edit Idea',
+          headerBackTitle: 'Cancel',
+        }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen}
+        options={{
+          headerShown: true,
+          title: 'Settings',
+          headerBackTitle: 'Back',
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -40,40 +66,62 @@ function HomeStack() {
 function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: string;
+
+          switch (route.name) {
+            case 'Home':
+              iconName = 'home';
+              break;
+            case 'Capture':
+              iconName = 'add-circle';
+              break;
+            case 'Lists':
+              iconName = 'list';
+              break;
+            case 'Map':
+              iconName = 'map';
+              break;
+            case 'Profile':
+              iconName = 'person';
+              break;
+            default:
+              iconName = 'help';
+          }
+
+          return <Icon name={iconName} size={size} color={color} />;
+        },
         tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
-          paddingBottom: 5,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E5EA',
+          paddingBottom: Platform.OS === 'ios' ? 20 : 5,
           paddingTop: 5,
-          height: 60,
+          height: Platform.OS === 'ios' ? 85 : 60,
         },
         tabBarLabelStyle: {
           fontSize: 12,
+          fontWeight: '500',
         },
         headerShown: false,
-      }}
+        lazy: false,
+      })}
     >
       <Tab.Screen 
         name="Home" 
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🏠</Text>
-          ),
-          lazy: false, // Keep the component mounted
         }}
       />
       <Tab.Screen 
         name="Capture" 
-        component={QuickCapture}
+        component={CaptureScreen}
         options={{
           tabBarLabel: 'Capture',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size + 4, color }}>➕</Text>
-          ),
-          lazy: false, // Keep the component mounted
         }}
       />
       <Tab.Screen 
@@ -81,10 +129,6 @@ function TabNavigator() {
         component={ListsScreen}
         options={{
           tabBarLabel: 'Lists',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📋</Text>
-          ),
-          lazy: false, // Keep the component mounted
         }}
       />
       <Tab.Screen 
@@ -92,17 +136,20 @@ function TabNavigator() {
         component={MapScreen}
         options={{
           tabBarLabel: 'Map',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🗺️</Text>
-          ),
-          lazy: false, // Keep the component mounted
         }}
       />
-
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+        }}
+      />
     </Tab.Navigator>
   );
 }
 
+// Main App Navigator
 export default function AppNavigator() {
   return (
     <NavigationContainer>

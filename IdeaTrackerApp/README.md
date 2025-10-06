@@ -1,163 +1,97 @@
-# IdeaTracker - AI-Powered Idea Management App
+This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-A React Native mobile app that helps you capture, organize, and track your ideas using intelligent AI categorization.
+# Getting Started
 
-## Features
+> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
-- **🤖 AI-Powered Categorization**: Automatically categorizes ideas as locations, habits, or one-time tasks
-- **📍 Location Tracking**: Map view for places to visit with geocoding support
-- **🔄 Habit Management**: Track daily routines and learning goals
-- **✨ Quick Capture**: Simple interface to capture ideas on the go
-- **🏷️ Smart Tagging**: Automatic tag generation for easy organization
-- **🗺️ Interactive Maps**: Visual representation of location-based ideas
-- **📊 Statistics**: Track your idea patterns and progress
+## Step 1: Start Metro
 
-## Setup Instructions
+First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
-### Prerequisites
+To start the Metro dev server, run the following command from the root of your React Native project:
 
-- Node.js 18+ and npm/yarn
-- React Native development environment set up
-- Android Studio (for Android development)
-- Xcode (for iOS development, macOS only)
+```sh
+# Using npm
+npm start
 
-### 1. Install Dependencies
-
-```bash
-npm install
-# or
-yarn install
+# OR using Yarn
+yarn start
 ```
 
-### 2. Firebase Setup
+## Step 2: Build and run your app
 
-The app uses Firebase for backend services. Follow these steps:
+With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or select existing one
-3. Add Android app:
-   - Package name: Check `android/app/build.gradle`
-   - Download `google-services.json` and place in `android/app/`
-4. Add iOS app:
-   - Bundle ID: Check `ios/IdeaTrackerApp/Info.plist`
-   - Download `GoogleService-Info.plist` and place in `ios/IdeaTrackerApp/`
-5. Enable services:
-   - **Authentication** → Sign-in method → Anonymous (enable)
-   - **Firestore Database** → Create database → Start in test mode
+### Android
 
-### 3. AI Configuration (Optional)
-
-For AI-powered idea categorization:
-
-1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Edit `src/services/ai/ideaProcessor.ts`
-3. Replace `'YOUR_API_KEY_HERE'` with your actual API key
-4. Set `USE_AI = true`
-
-**Note**: The app works without AI using local processing. AI enhances categorization but isn't required.
-
-### 4. Google Maps (Optional)
-
-For map functionality:
-
-1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Edit `src/screens/MapScreen.tsx`
-3. Replace `'YOUR_GOOGLE_MAPS_API_KEY'` with your actual API key
-
-### 5. Run the App
-
-#### Android
-```bash
+```sh
+# Using npm
 npm run android
-# or
+
+# OR using Yarn
 yarn android
 ```
 
-#### iOS
-```bash
-cd ios && bundle install && cd ..
+### iOS
+
+For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+
+The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+
+```sh
+bundle install
+```
+
+Then, and every time you update your native dependencies, run:
+
+```sh
+bundle exec pod install
+```
+
+For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+
+```sh
+# Using npm
 npm run ios
-# or
+
+# OR using Yarn
 yarn ios
 ```
 
-## How It Works
+If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
-### Idea Categories
+This is one way to run your app — you can also build it directly from Android Studio or Xcode.
 
-- **📍 Locations**: Places to visit (restaurants, cities, landmarks)
-- **🔄 Habits**: Repeated activities (learning, exercise, daily routines)
-- **✨ One-Time Tasks**: Single activities (trying new foods, calling someone)
+## Step 3: Modify your app
 
-### Smart Examples
+Now that you have successfully run the app, let's make changes!
 
-- "Try Papa Johns" → Location (specific restaurant)
-- "Learn French" → Habit (ongoing learning)
-- "Try Chinese food" → One-time task (no specific restaurant)
-- "Meditate daily" → Habit (daily routine)
+Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
 
-### AI Processing
+When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
 
-The app uses OpenAI's GPT-3.5 to:
-- Categorize ideas intelligently
-- Extract metadata (priority, estimated time, sentiment)
-- Generate relevant tags
-- Provide context-aware processing
+- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
+- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
 
-## Project Structure
+## Congratulations! :tada:
 
-```
-src/
-├── components/          # Reusable UI components
-├── config/             # Firebase and app configuration
-├── navigation/         # App navigation setup
-├── screens/           # Main app screens
-│   ├── HomeScreen.tsx    # Dashboard with all ideas
-│   ├── QuickCapture.tsx  # Idea input and processing
-│   ├── MapScreen.tsx     # Location-based ideas map
-│   └── IdeaDetail.tsx    # Detailed idea view
-├── services/          # Business logic and AI
-│   └── ai/
-│       └── ideaProcessor.ts  # AI categorization logic
-└── navigation/
-    └── AppNavigator.tsx      # Main navigation structure
-```
+You've successfully run and modified your React Native App. :partying_face:
 
-## Troubleshooting
+### Now what?
 
-### Common Issues
+- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
-1. **Firebase connection errors**: Check your `google-services.json` and `GoogleService-Info.plist` files
-2. **AI not working**: Verify your OpenAI API key and internet connection
-3. **Maps not loading**: Check your Google Maps API key and billing setup
-4. **Build errors**: Ensure all native dependencies are properly linked
+# Troubleshooting
 
-### Development Tips
+If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-- The app uses anonymous authentication by default
-- Local processing works offline without AI
-- Check console logs for debugging information
-- Use React Native Debugger for better debugging experience
+# Learn More
 
-## Contributing
+To learn more about React Native, take a look at the following resources:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For issues and questions:
-- Check the troubleshooting section
-- Review Firebase and React Native documentation
-- Open an issue on GitHub
-
----
-
-**Note**: This app is designed to work out of the box with minimal configuration. Firebase anonymous auth and local processing ensure basic functionality without external API keys.
+- [React Native Website](https://reactnative.dev) - learn more about React Native.
+- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

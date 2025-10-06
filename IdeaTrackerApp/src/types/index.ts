@@ -1,235 +1,209 @@
-// Centralized Type Definitions
-// All TypeScript interfaces and types for the IdeaTracker app
+/**
+ * Type definitions for the IdeaTracker app
+ */
 
-// Core Idea Types
-export type IdeaCategory = 'location' | 'habit' | 'oneTime' | 'uncategorized';
-
-export interface BaseIdea {
+export interface Idea {
   id: string;
-  originalText: string;
+  title: string;
+  description: string;
   category: IdeaCategory;
-  processedText: string;
-  title?: string;
+  priority: Priority;
+  status: IdeaStatus;
   tags: string[];
+  location?: Location;
   createdAt: Date;
-  completed: boolean;
+  updatedAt: Date;
+  completedAt?: Date;
+  estimatedTime?: number; // in minutes
+  aiProcessed: boolean;
   userId: string;
-  updatedAt?: Date;
 }
 
-export interface LocationIdea extends BaseIdea {
-  category: 'location';
-  location: {
-    latitude?: number;
-    longitude?: number;
-    address?: string;
-    placeName?: string;
-    searchQuery?: string;
-    placeType?: string;
-    country?: string;
-    city?: string;
-  };
-}
+export type IdeaCategory = 'location' | 'habit' | 'task';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type IdeaStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
-export interface HabitIdea extends BaseIdea {
-  category: 'habit';
-  habitDetails: {
-    frequency: string;
-    targetDays?: number[];
-    reminderTime?: string;
-    streak?: number;
-    duration?: string;
-  };
-}
-
-export interface OneTimeIdea extends BaseIdea {
-  category: 'oneTime';
-}
-
-export interface UncategorizedIdea extends BaseIdea {
-  category: 'uncategorized';
-}
-
-export type Idea = LocationIdea | HabitIdea | OneTimeIdea | UncategorizedIdea;
-
-// Firebase Types
-export interface FirebaseIdea extends BaseIdea {
-  location?: {
-    latitude?: number;
-    longitude?: number;
-    address?: string;
-    placeName?: string;
-    searchQuery?: string;
-    placeType?: string;
-    country?: string;
-    city?: string;
-  };
-  habitDetails?: {
-    frequency: string;
-    targetDays?: number[];
-    reminderTime?: string;
-    streak?: number;
-    duration?: string;
-  };
-  metadata?: {
-    estimatedTime?: string;
-    difficulty?: 'easy' | 'medium' | 'hard';
-    priority?: 'low' | 'medium' | 'high';
-    aiProcessed: boolean;
-    processingTime?: number;
-    sentiment?: 'excited' | 'neutral' | 'urgent';
-    actionVerb?: string;
-    cuisine?: string;
-    activityType?: string;
-  };
-}
-
-// Location Service Types
-export interface GeocodedLocation {
+export interface Location {
   latitude: number;
   longitude: number;
-  address: string;
-  placeName: string;
+  address?: string;
   city?: string;
   state?: string;
   country?: string;
-  placeType?: string;
-  relevance: number;
-  distance?: number;
-  source: string;
   placeId?: string;
 }
 
-export interface LocationSearchResult {
-  query: string;
-  locations: GeocodedLocation[];
-  bestMatch?: GeocodedLocation;
-  totalResults: number;
-  searchRadius: number;
+export interface AIProcessingResult {
+  category: IdeaCategory;
+  priority: Priority;
+  tags: string[];
+  estimatedTime?: number;
+  confidence: number;
+  reasoning?: string;
 }
 
-export interface UserLocation {
-  latitude: number;
-  longitude: number;
-  accuracy?: number;
-  timestamp?: number;
+export interface User {
+  id: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  createdAt: Date;
+  lastActiveAt: Date;
+  preferences: UserPreferences;
 }
 
-// Navigation Types
-export type RootStackParamList = {
+export interface UserPreferences {
+  theme: 'light' | 'dark' | 'system';
+  notifications: boolean;
+  aiEnabled: boolean;
+  mapsEnabled: boolean;
+  defaultPriority: Priority;
+  autoCategorize: boolean;
+}
+
+export interface NavigationProps {
+  navigation: any;
+  route: any;
+}
+
+export interface TabParamList {
   Home: undefined;
   Capture: undefined;
   Lists: undefined;
   Map: undefined;
-  IdeaDetail: { idea: FirebaseIdea };
-};
+  Profile: undefined;
+}
 
-export type HomeStackParamList = {
+export interface StackParamList {
   HomeMain: undefined;
-  IdeaDetail: { idea: FirebaseIdea };
-};
-
-// UI Types
-export interface CategoryConfig {
-  icon: string;
-  color: string;
-  label: string;
+  IdeaDetail: { ideaId: string };
+  EditIdea: { ideaId: string };
+  Settings: undefined;
+  About: undefined;
 }
 
-export interface CategoryStats {
-  location: number;
-  oneTime: number;
-  habit: number;
-  uncategorized: number;
+export interface FilterOptions {
+  category?: IdeaCategory;
+  priority?: Priority;
+  status?: IdeaStatus;
+  tags?: string[];
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  location?: {
+    latitude: number;
+    longitude: number;
+    radius: number; // in kilometers
+  };
 }
 
-// Configuration Types
-export interface AppConfig {
-  openaiApiKey: string;
-  googlePlacesApiKey: string;
-  googleGeocodingApiKey: string;
-  googleMapsApiKey: string;
-  mapboxApiKey: string;
-  useAI: boolean;
-  debugMode: boolean;
-  aiTimeout: number;
-  maxRetries: number;
-  defaultSearchRadius: number;
-  maxSearchResults: number;
+export interface SortOptions {
+  field: 'createdAt' | 'updatedAt' | 'priority' | 'title' | 'status';
+  direction: 'asc' | 'desc';
 }
 
-export interface LocationServiceConfig {
-  enabled: boolean;
-  name: string;
-  description: string;
-  apiKey?: string;
-  priority: number;
+export interface SearchOptions {
+  query: string;
+  filters: FilterOptions;
+  sort: SortOptions;
+  limit?: number;
+  offset?: number;
 }
 
-// Error Types
-export interface AppError {
-  code: string;
-  message: string;
-  userMessage: string;
-  details?: any;
-  timestamp: Date;
-}
-
-// API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
 }
 
-// Statistics Types
-export interface IdeasStatistics {
+export interface PaginatedResponse<T> {
+  data: T[];
   total: number;
-  byCategory: {
-    location: number;
-    habit: number;
-    oneTime: number;
-  };
-  completed: number;
-  withAI: number;
-  byPlaceType: Record<string, number>;
-  byCuisine: Record<string, number>;
-  topTags: Record<string, number>;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
-// Map Types
-export interface MapRegion {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
+export interface ErrorState {
+  hasError: boolean;
+  error?: Error;
+  message?: string;
+  code?: string;
 }
 
-// Component Props Types
-export interface ScreenProps {
-  navigation: any;
-  route?: any;
+export interface LoadingState {
+  isLoading: boolean;
+  loadingMessage?: string;
 }
 
-export interface IdeaCardProps {
-  idea: FirebaseIdea;
-  onPress: (idea: FirebaseIdea) => void;
-  onToggleCompletion: (ideaId: string, completed: boolean) => void;
-  selected?: boolean;
+export interface AppState {
+  user: User | null;
+  ideas: Idea[];
+  filters: FilterOptions;
+  sort: SortOptions;
+  searchQuery: string;
+  error: ErrorState;
+  loading: LoadingState;
+  offline: boolean;
 }
 
-export interface CategoryFilterProps {
-  category: string;
-  label: string;
-  count?: number;
-  isActive: boolean;
-  onPress: (category: string) => void;
+// Component Props
+export interface ButtonProps {
+  title: string;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'small' | 'medium' | 'large';
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: string;
 }
 
-// Utility Types
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+export interface InputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  label?: string;
+  error?: string;
+  multiline?: boolean;
+  numberOfLines?: number;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+}
 
-// Export all types as a namespace for easier imports
-export * from './index';
+export interface CardProps {
+  children: React.ReactNode;
+  onPress?: () => void;
+  style?: any;
+  elevation?: number;
+}
+
+export interface ModalProps {
+  visible: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  animationType?: 'slide' | 'fade' | 'none';
+}
+
+// Service Types
+export interface LocationService {
+  getCurrentLocation: () => Promise<Location>;
+  requestPermission: () => Promise<boolean>;
+  watchLocation: (callback: (location: Location) => void) => () => void;
+}
+
+export interface AIService {
+  categorizeIdea: (idea: string) => Promise<AIProcessingResult>;
+  generateTags: (idea: string) => Promise<string[]>;
+  estimateTime: (idea: string, category: IdeaCategory) => Promise<number>;
+}
+
+export interface DataService {
+  saveIdea: (idea: Omit<Idea, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Idea>;
+  getIdeas: (filters?: FilterOptions) => Promise<Idea[]>;
+  updateIdea: (id: string, updates: Partial<Idea>) => Promise<Idea>;
+  deleteIdea: (id: string) => Promise<void>;
+  searchIdeas: (options: SearchOptions) => Promise<PaginatedResponse<Idea>>;
+}
